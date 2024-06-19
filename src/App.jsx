@@ -2,35 +2,44 @@ import Footer from "./components/Footer";
 import Main from "./components/Main";
 import Sidebar from "./components/Sidebar";
 import { useEffect, useState } from "react";
+import dayjs from "dayjs";
 
 function App() {
   const [data, setData] = useState(null);
-  const [load, setLoading] = useState(false);
   const [showSideBar, setShowSideBar] = useState(false);
+  const [date, setDate] = useState(dayjs(new Date()));
 
   function handleToggleSideBar() {
     setShowSideBar(!showSideBar);
   }
 
+  function handleDateChange(newDate) {
+    setDate(newDate);
+  }
+
   useEffect(() => {
     async function fetchAPIData() {
       const NASA_KEY = import.meta.env.VITE_NASA_API_KEY;
-      const url =
-        "https://api.nasa.gov/planetary/apod" + `?api_key=${NASA_KEY}`;
 
-      const today = new Date().toDateString;
-      const localKey = `NASA-${today}`;
-      if (localStorage.getItem(localKey)) {
-        const apiData = JSON.parse(localStorage.getItem(localKey));
-        console.log("Fetched from cached today");
-        setData(apiData);
-        return;
+      const formattedDate = date.format("YYYY-MM-DD");
+      const currentDate = dayjs(new Date()).format("YYYY-MM-DD");
+
+      //check if user changed the date
+      // console.log(
+      //   "Formatted date: " + formattedDate + " Current Date: " + currentDate
+      // );
+
+      let url = `https://api.nasa.gov/planetary/apod?api_key=${NASA_KEY}`;
+
+      if (formattedDate !== currentDate) {
+        url = `https://api.nasa.gov/planetary/apod?api_key=${NASA_KEY}&date=${formattedDate}`;
       }
-      localStorage.clear();
+
+      // console.log(url);
+
       try {
         const response = await fetch(url);
         const apiData = await response.json();
-        localStorage.setItem(localKey, JSON.stringify(apiData));
         setData(apiData);
 
         console.log("Fetched from API today");
@@ -39,7 +48,7 @@ function App() {
       }
     }
     fetchAPIData();
-  }, []);
+  }, [date]);
 
   return (
     <>
@@ -51,7 +60,11 @@ function App() {
         </div>
       )}
       {showSideBar && (
-        <Sidebar data={data} handleToggleSideBar={handleToggleSideBar} />
+        <Sidebar
+          data={data}
+          handleToggleSideBar={handleToggleSideBar}
+          handleDateChange={handleDateChange}
+        />
       )}
       {data && <Footer data={data} handleToggleSideBar={handleToggleSideBar} />}
     </>
